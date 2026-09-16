@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>占い台帳・全期間検索</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color-scheme:light dark}body{margin:0;background:#f5f5f7;color:#111}main{max-width:760px;margin:auto;padding:16px}.panel,.card{background:#fff;border:1px solid #ddd;border-radius:16px;padding:16px;margin-bottom:14px}input{box-sizing:border-box;width:100%;padding:12px;border:1px solid #ccc;border-radius:12px;font-size:16px}.muted{opacity:.7}.q{font-weight:700;font-size:17px;margin:6px 0}.meta{font-size:13px;font-weight:700;opacity:.7}.v{font-weight:700;margin-top:8px}a{color:inherit}@media(prefers-color-scheme:dark){body{background:#111;color:#f5f5f7}.panel,.card{background:#1c1c1e;border-color:#38383a}input{background:#111;color:#fff;border-color:#444}}
+</style>
+</head>
+<body><main>
+<section class="panel"><b>全期間検索</b><p class="muted">台帳に保存されている全日付を横断して検索します。</p><input id="search" placeholder="質問・判定・メモなどを検索"><div id="summary" class="muted" style="margin-top:8px"></div><p><a href="./">← 本番台帳へ戻る</a></p></section>
+<div id="results"></div>
+<script>
+const KEY='uranai-ledger-v1';let logs=[];try{logs=JSON.parse(localStorage.getItem(KEY))||[]}catch(e){}
+function esc(s){return String(s??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]))}
+function parseLeoVerdict(text){const t=String(text||'');const exact=[...t.matchAll(/最終判定\s*[：:]\s*(YES|NO|中立)/gi)].pop();if(exact){const v=exact[1].toUpperCase();return v==='YES'?'YES':v==='NO'?'NO':'中立'}const tail=t.slice(-1600);const pats=[/(?:結論|最終|判定)[^。\n]{0,40}(YES|NO|中立)/gi,/(YES|NO|中立)\s*寄り/gi];for(const re of pats){const all=[...tail.matchAll(re)];if(all.length){const v=all[all.length-1][1].toUpperCase();return v==='YES'?'YES':v==='NO'?'NO':'中立'}}return ''}
+function render(){const term=document.getElementById('search').value.trim().toLowerCase();let arr=[...logs].sort((a,b)=>Number(b.seq||0)-Number(a.seq||0));if(term)arr=arr.filter(x=>JSON.stringify(x).toLowerCase().includes(term));const box=document.getElementById('results');box.innerHTML='';document.getElementById('summary').textContent=term?`${arr.length}件ヒット／全${logs.length}件`:`全${logs.length}件`;arr.forEach(item=>{const formal=item.formalVerdict||parseLeoVerdict(item.leoRead)||'未設定';const e=document.createElement('div');e.className='card';e.innerHTML=`<div class="meta">${esc(item.date||'日付不明')} ／ 通算 #${esc(item.seq||'')}</div><div class="q">${esc(item.q||'')}</div><div class="muted">本卦：${esc(item.ben||'')}<br>変爻：${esc(item.move||'')}<br>之卦：${esc(item.zhi||'')}</div><div class="v">簡易判定：${esc(item.verdict||'未判定')}</div><div class="v">正式判定：${esc(formal)}</div>${item.memo?`<div class="muted" style="margin-top:8px">メモ：${esc(item.memo)}</div>`:''}`;box.append(e)})}
+document.getElementById('search').oninput=render;render();
+</script></main></body></html>
