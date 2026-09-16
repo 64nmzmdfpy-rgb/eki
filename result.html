@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>占い台帳・結果</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color-scheme:light dark}body{margin:0;background:#f5f5f7;color:#111}main{max-width:760px;margin:auto;padding:16px}.panel,.card{background:#fff;border:1px solid #ddd;border-radius:16px;padding:16px;margin-bottom:14px}.muted{opacity:.72}.q{font-weight:700;font-size:18px;margin:8px 0}.v{font-weight:800;margin-top:10px}a{color:inherit}.btn{display:block;text-align:center;text-decoration:none;border:1px solid #bbb;border-radius:12px;padding:11px 14px;margin-top:12px}@media(prefers-color-scheme:dark){body{background:#111;color:#f5f5f7}.panel,.card{background:#1c1c1e;border-color:#38383a}.btn{border-color:#555}}
+</style>
+</head>
+<body><main>
+<section class="panel"><b>占い結果</b><p><a href="search-all.html">← 全期間検索へ戻る</a></p></section>
+<div id="result"></div>
+<script>
+const KEY='uranai-ledger-v1';let logs=[];try{logs=JSON.parse(localStorage.getItem(KEY))||[]}catch(e){}
+function esc(s){return String(s??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]))}
+function parseLeoVerdict(text){const t=String(text||'');const exact=[...t.matchAll(/最終判定\s*[：:]\s*(YES|NO|中立)/gi)].pop();if(exact){const v=exact[1].toUpperCase();return v==='YES'?'YES':v==='NO'?'NO':'中立'}const tail=t.slice(-1600);const pats=[/(?:結論|最終|判定)[^。\n]{0,40}(YES|NO|中立)/gi,/(YES|NO|中立)\s*寄り/gi];for(const re of pats){const all=[...tail.matchAll(re)];if(all.length){const v=all[all.length-1][1].toUpperCase();return v==='YES'?'YES':v==='NO'?'NO':'中立'}}return ''}
+const seq=new URLSearchParams(location.search).get('seq');const item=logs.find(x=>String(x.seq)===String(seq));const box=document.getElementById('result');
+if(!item){box.innerHTML='<section class="card">この端末の台帳に該当する占いが見つかりません。</section>'}else{const formal=item.formalVerdict||parseLeoVerdict(item.leoRead)||'未設定';box.innerHTML=`<section class="card"><div class="muted">${esc(item.date||'日付不明')} ／ 通算 #${esc(item.seq||'')}</div><div class="q">${esc(item.q||'')}</div><div class="muted">生データ：${esc(item.raw||'')}<br>本卦：${esc(item.ben||'')}<br>変爻：${esc(item.move||'')}<br>之卦：${esc(item.zhi||'')}</div><div style="margin-top:10px">${esc(item.summary||'')}</div><div class="v">簡易判定：${esc(item.verdict||'未判定')}</div><div class="v">正式判定：${esc(formal)}</div>${item.leoRead?`<details style="margin-top:14px"><summary>レオの読み</summary><div style="white-space:pre-wrap;margin-top:10px">${esc(item.leoRead)}</div></details>`:''}${item.memo?`<div class="muted" style="margin-top:14px">メモ：${esc(item.memo)}</div>`:''}<a class="btn" href="./">本番台帳へ戻る</a></section>`}
+</script></main></body></html>
