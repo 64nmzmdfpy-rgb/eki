@@ -13,7 +13,7 @@
 <main>
 <section class="panel"><div class="title">占う</div><textarea id="q" rows="3" placeholder="質問を入力"></textarea><button id="cast" class="primary">占う</button></section>
 <section class="panel"><div class="title">バックアップ</div><div class="toolbar"><button id="backup">バックアップを保存</button><button id="restoreBtn">バックアップから復元</button></div><input id="restoreFile" class="hidden" type="file" accept=".json,application/json"><div id="backupStatus" class="status"></div></section>
-<section class="panel"><div class="title">検索・抽出</div><div class="toolbar"><input id="search" placeholder="この日の検索"><button type="button" onclick="location.href='search-all.html'">全期間検索</button></div></section>
+<section class="panel"><div class="title">検索・抽出</div><div class="toolbar"><input id="search" placeholder="この日の検索"><button type="button" onclick="location.href='search-all.html?v=20260917-4'">全期間検索</button></div></section>
 <section class="panel"><div class="calhead"><button id="pm">←</button><b id="mt"></b><button id="nm">→</button></div><div class="week"><div>日</div><div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div>土</div></div><div id="calendar" class="calendar"></div><button id="today" style="width:100%;margin-top:8px">今月</button></section>
 <div id="dateTitle" class="title"></div><div id="cards"></div>
 </main>
@@ -50,6 +50,6 @@ document.getElementById('backup').onclick=saveBackup;
 document.getElementById('restoreBtn').onclick=()=>document.getElementById('restoreFile').click();document.getElementById('restoreFile').onchange=async ev=>{const f=ev.target.files[0];if(!f)return;try{const data=JSON.parse(await f.text());if(!Array.isArray(data.logs))throw new Error();if(confirm(`バックアップ ${data.logs.length}件で現在の台帳を置き換える？`)){logs=data.logs;maxSeq=Number(data.maxSeq||0);for(const x of logs){if(Number(x.seq)>maxSeq)maxSeq=Number(x.seq)}for(const x of logs){if(!x.seq){maxSeq++;x.seq=maxSeq}}saveLocal();render();document.getElementById('backupStatus').textContent=`復元完了：${f.name}`}}catch(e){alert('台帳バックアップとして読めませんでした')}ev.target.value=''};
 updateBackupHelp();saveLocal();render();
 </script>
-<script src="extras.js?v=20260917-3"></script>
+<script src="extras.js?v=20260917-5"></script>
 </body>
 </html>
