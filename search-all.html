@@ -67,14 +67,14 @@ function renderAnalytics(){
     <div class="stat"><span class="muted">最多之卦</span><b>${zhiRank[0]?zhiRank[0].no:'—'}</b><div class="small">${zhiRank[0]?esc(zhiRank[0].name)+' '+zhiRank[0].n+'回':''}</div></div>
     <div class="stat"><span class="muted">最多重複質問</span><b>${qRank[0]?qRank[0].length+'回':'—'}</b><div class="small">${qRank[0]?esc(qRank[0][qRank[0].length-1].q):''}</div></div>
   </div>
-  <details open style="margin-top:12px"><summary style="font-weight:700;cursor:pointer">時間帯ヒートマップ</summary><div class="muted small" style="margin:6px 0">時刻あり ${timed}件</div><div style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px">${heat}</div></details>
-  <details open style="margin-top:14px"><summary style="font-weight:700;cursor:pointer">時間帯ランキング TOP10</summary><div style="margin-top:6px">${rankRows(hourRank,x=>x.h+'時台',x=>x.n+'件')}</div></details>
-  <details open style="margin-top:14px"><summary style="font-weight:700;cursor:pointer">よく占っている質問 TOP10</summary><div class="muted small" style="margin:6px 0">同文・軽い表記ゆれをまとめて集計</div><div>${rankRows(qRank,a=>a[a.length-1].q,a=>a.length+'回')}</div></details>
-  <details open style="margin-top:14px"><summary style="font-weight:700;cursor:pointer">正式判定 YES / NO / 中立</summary><div class="muted small" style="margin:6px 0">正式判定済み ${decided}件 ／ 未設定 ${vc['未設定']}件</div><div>${verdict}</div></details>
-  <details open style="margin-top:14px"><summary style="font-weight:700;cursor:pointer">本卦ランキング TOP10</summary><div style="margin-top:6px">${rankRows(benRank,x=>x.no+' '+x.name,x=>x.n+'回')}</div></details>
-  <details open style="margin-top:14px"><summary style="font-weight:700;cursor:pointer">之卦ランキング TOP10</summary><div style="margin-top:6px">${rankRows(zhiRank,x=>x.no+' '+x.name,x=>x.n+'回')}</div></details>
-  <details open style="margin-top:14px"><summary style="font-weight:700;cursor:pointer">変爻ランキング TOP10</summary><div style="margin-top:6px">${rankRows(moveRank,x=>x.name,x=>x.n+'回')}</div></details>
-  <details open style="margin-top:14px"><summary style="font-weight:700;cursor:pointer">人物名らしき語ランキング TOP10</summary><div class="muted small" style="margin:6px 0">質問文から自動抽出。2件以上のみ</div><div>${rankRows(personRank,x=>x.name,x=>x.n+'件')}</div></details>`;
+  <details style="margin-top:12px"><summary style="font-weight:700;cursor:pointer">時間帯ヒートマップ</summary><div class="muted small" style="margin:6px 0">時刻あり ${timed}件</div><div style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px">${heat}</div></details>
+  <details style="margin-top:14px"><summary style="font-weight:700;cursor:pointer">時間帯ランキング TOP10</summary><div style="margin-top:6px">${rankRows(hourRank,x=>x.h+'時台',x=>x.n+'件')}</div></details>
+  <details style="margin-top:14px"><summary style="font-weight:700;cursor:pointer">よく占っている質問 TOP10</summary><div class="muted small" style="margin:6px 0">同文・軽い表記ゆれをまとめて集計</div><div>${rankRows(qRank,a=>a[a.length-1].q,a=>a.length+'回')}</div></details>
+  <details style="margin-top:14px"><summary style="font-weight:700;cursor:pointer">正式判定 YES / NO / 中立</summary><div class="muted small" style="margin:6px 0">正式判定済み ${decided}件 ／ 未設定 ${vc['未設定']}件</div><div>${verdict}</div></details>
+  <details style="margin-top:14px"><summary style="font-weight:700;cursor:pointer">本卦ランキング TOP10</summary><div style="margin-top:6px">${rankRows(benRank,x=>x.no+' '+x.name,x=>x.n+'回')}</div></details>
+  <details style="margin-top:14px"><summary style="font-weight:700;cursor:pointer">之卦ランキング TOP10</summary><div style="margin-top:6px">${rankRows(zhiRank,x=>x.no+' '+x.name,x=>x.n+'回')}</div></details>
+  <details style="margin-top:14px"><summary style="font-weight:700;cursor:pointer">変爻ランキング TOP10</summary><div style="margin-top:6px">${rankRows(moveRank,x=>x.name,x=>x.n+'回')}</div></details>
+  <details style="margin-top:14px"><summary style="font-weight:700;cursor:pointer">人物名らしき語ランキング TOP10</summary><div class="muted small" style="margin:6px 0">質問文から自動抽出。2件以上のみ</div><div>${rankRows(personRank,x=>x.name,x=>x.n+'件')}</div></details>`;
 }
 
 function renderTop(){const overdue=logs.filter(x=>x.check&&(x.grade||'未判定')==='未判定'&&x.check<todayKey()).length;document.getElementById('overdue').innerHTML=overdue?`<div class="warn">期限切れで未判定：${overdue}件</div>`:'';const s=localStorage.getItem(BACKUPKEY);document.getElementById('backupInfo').textContent=s?`最終バックアップ記録：${new Date(s).toLocaleString()}`:'最終バックアップ記録：まだありません'}
