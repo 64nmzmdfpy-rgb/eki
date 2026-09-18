@@ -192,7 +192,7 @@ function xRenderAnalytics(){
 let xAnalyticsTimer=0;
 function xScheduleAnalytics(){clearTimeout(xAnalyticsTimer);xAnalyticsTimer=setTimeout(xRenderAnalytics,40)}
 
-const obs=new MutationObserver(()=>{xEnhanceCards();xPaintCalendar();xScheduleAnalytics()});const cards=document.getElementById('cards');if(cards)obs.observe(cards,{childList:true,subtree:true});const cal=document.getElementById('calendar');if(cal)obs.observe(cal,{childList:true,subtree:true});
+const obs=new MutationObserver(()=>{xEnhanceCards();xPaintCalendar()});const cards=document.getElementById('cards');if(cards)obs.observe(cards,{childList:true,subtree:true});const cal=document.getElementById('calendar');if(cal)obs.observe(cal,{childList:true,subtree:true});
 document.getElementById('backup')?.addEventListener('click',()=>{localStorage.setItem(X_BACKUP,new Date().toISOString());setTimeout(xRefreshBackup,0)});
-xSetupQuestionCheck();xRecoverCreatedAt();xRefreshBackup();xRefreshOverdue();xEnhanceCards();xPaintCalendar();xRenderAnalytics();xRestoreReturn();
+xSetupQuestionCheck();xRecoverCreatedAt();xRefreshBackup();xRefreshOverdue();xEnhanceCards();xPaintCalendar();xRestoreReturn();
 })();
