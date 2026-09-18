@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>占い台帳・一般辞書追加</title>
+<style>:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color-scheme:light dark}body{margin:0;background:#f5f5f7;color:#111}main{max-width:680px;margin:auto;padding:24px}.card{background:#fff;border:1px solid #ddd;border-radius:16px;padding:18px}a{color:inherit}@media(prefers-color-scheme:dark){body{background:#111;color:#f5f5f7}.card{background:#1c1c1e;border-color:#38383a}}</style>
+</head>
+<body><main><section class="card"><b>一般辞書を追加しました</b><p id="status">処理中…</p><p><a href="./">占い台帳へ戻る</a></p></section></main>
+<script>
+(()=>{
+const KEY='uranai-ledger-alias-v1';
+const seeds=[
+  ['株','株式','topic'],['株式','株式','topic'],['投資','投資','topic'],['株価','株価','metric'],['終値','終値','metric'],['始値','始値','metric'],['高値','高値','metric'],['安値','安値','metric'],['上昇率','上昇率','metric'],['下落率','下落率','metric'],['日経平均','日経平均','metric'],['TOPIX','TOPIX','metric'],['配当','配当','topic'],['配当金','配当','topic'],['決算','決算','topic'],['業績','業績','topic'],['増配','増配','topic'],['減配','減配','topic'],['優待','株主優待','topic'],['株主優待','株主優待','topic'],['利確','利益確定','topic'],['利益確定','利益確定','topic'],['損切り','損切り','topic'],['買い増し','買い増し','topic'],['ナンピン','買い増し','topic'],['暴騰','急騰','topic'],['急騰','急騰','topic'],['暴落','急落','topic'],['急落','急落','topic'],
+  ['野球','野球','topic'],['サッカー','サッカー','topic'],['バスケ','バスケットボール','topic'],['バスケットボール','バスケットボール','topic'],['テニス','テニス','topic'],['フィギュアスケート','フィギュアスケート','topic'],['F1','F1','topic'],['MLB','MLB','organization'],['NPB','NPB','organization'],['Jリーグ','Jリーグ','organization'],['FIFA','FIFA','organization'],['試合','試合結果','topic'],['試合結果','試合結果','topic'],['勝つ','勝敗','topic'],['負ける','勝敗','topic'],['勝敗','勝敗','topic'],['優勝','優勝','topic'],['日本一','日本一','topic'],['タイトル','タイトル獲得','topic'],['打撃タイトル','打撃タイトル','topic'],['首位打者','首位打者','topic'],['本塁打王','本塁打王','topic'],['打点王','打点王','topic'],['盗塁王','盗塁王','topic'],['ホームラン','本塁打','topic'],['本塁打','本塁打','topic'],['打率','打率','metric'],['防御率','防御率','metric'],['勝率','勝率','metric'],['得点','得点','metric'],['順位','順位','metric'],['ランキング','ランキング','metric'],['記録','記録','topic'],['代表入り','代表選出','topic'],['代表選出','代表選出','topic'],['移籍','移籍','topic'],['引退','引退','topic'],
+  ['芸能','芸能','topic'],['ドラマ','ドラマ','topic'],['映画','映画','topic'],['アニメ','アニメ','topic'],['番組','番組出演','topic'],['出演','出演','topic'],['主演','主演','topic'],['共演','共演','topic'],['再共演','共演','topic'],['キャスティング','キャスティング','topic'],['役柄','役柄','topic'],['ヒロイン','ヒロイン','topic'],['朝ドラ','朝ドラ','topic'],['大河','大河ドラマ','topic'],['紅白','紅白歌合戦','topic'],['視聴率','視聴率','metric'],['世帯視聴率','世帯視聴率','metric'],['個人視聴率','個人視聴率','metric'],['コア視聴率','コア視聴率','metric'],['興行収入','興行収入','metric'],['配信順位','配信順位','metric'],['再生数','再生数','metric'],['売上','売上','metric'],['ヒット','ヒット','topic'],['大ヒット','ヒット','topic'],['バズ','バズ','topic'],['炎上','炎上','topic'],['評判','評判','topic'],['評価','評価','topic'],['演技','演技評価','topic'],['演技力','演技評価','topic'],['人気','人気','topic'],['知名度','知名度','topic'],['ファン','ファン反応','topic'],['ファン反応','ファン反応','topic'],['アンチ','アンチ反応','topic'],['アンチ反応','アンチ反応','topic'],['熱愛','交際','topic'],['交際','交際','topic'],['告白','告白','topic'],['結婚','結婚','topic'],['婚約','婚約','topic'],['同棲','同棲','topic'],['破局','破局','topic'],['離婚','離婚','topic'],['交際報道','交際報道','topic'],['熱愛報道','交際報道','topic'],['結婚報道','結婚報道','topic'],['記事','ネット記事','topic'],['ネット記事','ネット記事','topic'],['SNS','SNS反応','topic'],['トレンド','トレンド','topic'],['受賞','受賞','topic'],['賞','受賞','topic'],['紅白出場','紅白歌合戦','topic']
+];
+let cur=[];try{const x=JSON.parse(localStorage.getItem(KEY)||'[]');if(Array.isArray(x))cur=x}catch(e){}
+const seen=new Set(cur.map(x=>`${String(x.alias||'')}\u0000${String(x.canonical||'')}\u0000${String(x.type||'')}`));
+let added=0;
+for(const [alias,canonical,type] of seeds){const k=`${alias}\u0000${canonical}\u0000${type}`;if(seen.has(k))continue;cur.push({alias,canonical,type});seen.add(k);added++}
+localStorage.setItem(KEY,JSON.stringify(cur));
+document.getElementById('status').textContent=`${added}件を追加。既存辞書は保持しました。`;
+})();
+</script>
+</body>
+</html>
