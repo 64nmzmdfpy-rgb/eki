@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>占い台帳・辞書管理</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color-scheme:light dark}body{margin:0;background:#f5f5f7;color:#111}main{max-width:760px;margin:auto;padding:16px}.panel,.row{background:#fff;border:1px solid #ddd;border-radius:16px;padding:16px;margin-bottom:12px}.head{display:flex;align-items:center;justify-content:space-between;gap:10px}.title{font-size:18px;font-weight:700}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.full{grid-column:1/-1}input,select,button{box-sizing:border-box;width:100%;padding:10px;border:1px solid #bbb;border-radius:10px;font-size:15px;background:#fff;color:#111}button{cursor:pointer}.danger{width:auto;padding:6px 10px;font-size:12px}.meta{font-size:12px;opacity:.65;margin-top:4px}.word{font-weight:700;word-break:break-word}.rowhead{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.empty{opacity:.65}.back{color:inherit;text-decoration:none}.small{font-size:13px;opacity:.72}@media(prefers-color-scheme:dark){body{background:#111;color:#f5f5f7}.panel,.row{background:#1c1c1e;border-color:#38383a}input,select,button{background:#111;color:#fff;border-color:#555}}
+</style>
+</head>
+<body><main>
+<section class="panel"><div class="head"><div class="title">辞書管理</div><a class="back" href="./">← 台帳へ戻る</a></div><p class="small">この画面に表示される単語は、この端末のブラウザ内だけに保存されています。</p></section>
+<section class="panel"><div class="title">追加</div><div class="grid" style="margin-top:10px"><input id="alias" class="full" placeholder="見つける語"><input id="canonical" placeholder="登録名"><select id="type"><option value="person">人物</option><option value="work">作品</option><option value="organization">組織</option><option value="topic">テーマ</option><option value="metric">指標</option></select><button id="add" class="full">追加</button></div><div id="status" class="small" style="margin-top:8px"></div></section>
+<section class="panel"><div class="head"><div class="title">登録済み</div><div id="count" class="small"></div></div><input id="search" placeholder="辞書を検索" style="margin-top:10px"></section>
+<div id="list"></div>
+<script>
+(()=>{
+const KEY='uranai-ledger-alias-v1';
+const labels={person:'人物',work:'作品',organization:'組織',topic:'テーマ',metric:'指標'};
+function load(){try{const v=JSON.parse(localStorage.getItem(KEY)||'[]');return Array.isArray(v)?v:[]}catch(e){return[]}}
+let rows=load();
+function save(){localStorage.setItem(KEY,JSON.stringify(rows))}
+function esc(s){return String(s??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]))}
+function render(){const term=document.getElementById('search').value.trim().toLowerCase(),list=document.getElementById('list');const shown=rows.map((x,i)=>({...x,_i:i})).filter(x=>!term||`${x.alias||''} ${x.canonical||''} ${labels[x.type]||x.type||''}`.toLowerCase().includes(term));document.getElementById('count').textContent=`${rows.length}件`;list.innerHTML=shown.length?shown.map(x=>`<section class="row"><div class="rowhead"><div><div class="word">${esc(x.canonical||x.alias||'')}</div><div class="meta">${esc(labels[x.type]||x.type||'未分類')} ／ 検出語：${esc(x.alias||'')}</div></div><button class="danger" data-i="${x._i}">削除</button></div></section>`).join(''):'<section class="panel empty">該当する登録はありません。</section>';list.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{const i=Number(b.dataset.i);if(!Number.isInteger(i)||!rows[i])return;if(confirm('この辞書登録を削除する？')){rows.splice(i,1);save();render()}})}
+document.getElementById('add').onclick=()=>{const alias=document.getElementById('alias').value.trim(),canonical=document.getElementById('canonical').value.trim(),type=document.getElementById('type').value;if(!alias)return alert('見つける語を入力して');const name=canonical||alias;if(rows.some(x=>x.alias===alias&&x.canonical===name&&x.type===type)){document.getElementById('status').textContent='同じ登録がすでにあります。';return}rows.push({alias,canonical:name,type});save();document.getElementById('alias').value='';document.getElementById('canonical').value='';document.getElementById('status').textContent='追加しました。';render()};
+document.getElementById('search').oninput=render;render();
+})();
+</script></main></body></html>
