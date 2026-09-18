@@ -21,7 +21,7 @@ const tagParam=new URLSearchParams(location.search).get('tag')||'';
 function save(){localStorage.setItem(KEY,JSON.stringify(logs))}
 function esc(s){return String(s??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]))}
 async function copyText(text){try{await navigator.clipboard.writeText(text);return true}catch(e){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();const ok=document.execCommand('copy');ta.remove();return ok}}
-function parseLeoVerdict(text){const t=String(text||'');const exact=[...t.matchAll(/最終判定\s*[：:]\s*(YES|NO|中立)/gi)].pop();if(exact){const v=exact[1].toUpperCase();return v==='YES'?'YES':v==='NO'?'NO':'中立'}return''}
+function parseLeoVerdict(text){const t=String(text||'');const exact=[...t.matchAll(/最終判定\s*[：:]\s*(YES|NO|中立)/gi)].pop();if(exact){const v=exact[1].toUpperCase();return v==='YES'?'YES':v==='NO'?'NO':'中立'}const tail=t.slice(-2000);const pats=[/(?:結論|最終|判定)[^。\n]{0,50}(YES|NO|中立)/gi,/(YES|NO|中立)\s*寄り/gi];for(const re of pats){const all=[...tail.matchAll(re)];if(all.length){const v=all[all.length-1][1].toUpperCase();return v==='YES'?'YES':v==='NO'?'NO':'中立'}}return''}
 function formalOf(x){return x.formalVerdict||parseLeoVerdict(x.leoRead)||'未設定'}
 function todayKey(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 function accuracy(arr){const hit=arr.filter(x=>(x.grade||'未判定')==='当たり').length,miss=arr.filter(x=>(x.grade||'未判定')==='ハズレ').length,n=hit+miss;return n?`${Math.round(hit/n*1000)/10}% (${hit}/${n})`:'—'}
