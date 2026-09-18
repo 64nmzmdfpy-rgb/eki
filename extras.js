@@ -38,6 +38,25 @@ function xHeatLevel(n,max){
   if(!max||!n)return 0;
   return Math.max(1,Math.ceil((n/max)*5))
 }
+function xRankRows(rows,labelFn,valueFn,limit=10){
+  const a=[...rows].slice(0,limit);
+  return a.length?a.map((x,i)=>`<div style="display:grid;grid-template-columns:28px 1fr auto;gap:8px;padding:7px 0;border-bottom:1px solid rgba(127,127,127,.22)"><b>${i+1}</b><span>${esc(labelFn(x))}</span><b>${esc(valueFn(x))}</b></div>`).join(''):'まだデータがありません'
+}
+function xZhiParts(item){
+  const m=String(item.zhi||'').match(/^\\s*(\\d{1,2})\\s*(.*)$/);
+  return m?{no:Number(m[1]),name:m[2].trim()||'名称不明'}:null
+}
+function xPersonCandidates(q){
+  const text=String(q||'').normalize('NFKC');
+  const stop=new Set(['これ','それ','あれ','どれ','ここ','そこ','あそこ','今日','明日','昨日','今回','今後','最終','平均','仕事','結婚','共演','ドラマ','視聴率','質問','正式','判定','本当に','可能性','場合','世間','人気','事務所','メンバー','タイトル','年内','来年','相手','子供','交際','連絡先','朝ドラ','全話']);
+  const out=[];
+  const re=/([一-龯々ヶヵぁ-んァ-ヶー]{2,8})(?=(?:は|が|と|の|を|に|から|より|へ|も))/g;
+  for(const m of text.matchAll(re)){
+    const v=m[1].replace(/^(その|この|あの)/,'');
+    if(v.length>=2&&!stop.has(v)&&!/^\\d+$/.test(v))out.push(v)
+  }
+  return [...new Set(out)]
+}
 function xRenderAnalytics(){
   xRecoverCreatedAt();
   const host=xAnalyticsHost();
@@ -57,16 +76,35 @@ function xRenderAnalytics(){
     const alpha=lv?0.10+lv*0.12:0.03;
     return `<div title="${h}時台：${n}件" style="border:1px solid #bbb;border-radius:10px;padding:7px 2px;text-align:center;background:rgba(127,127,127,${alpha})"><b style="display:block;font-size:12px">${h}</b><span style="font-size:12px">${n}</span></div>`
   }).join('');
+  const hourRank=hours.map((n,h)=>({h,n})).filter(x=>x.n).sort((a,b)=>b.n-a.n||a.h-b.h);
+  const hourRankHtml=xRankRows(hourRank,x=>`${x.h}時台`,x=>`${x.n}件`);
 
-  const hexMap=new Map();
+  const hexMap=new Map(),zhiMap=new Map(),moveMap=new Map();
   for(const item of logs){
-    const no=xHexNo(item);if(!no)continue;
-    const key=no;
-    if(!hexMap.has(key))hexMap.set(key,{no,name:xHexName(item),n:0});
-    hexMap.get(key).n++
+    const no=xHexNo(item);
+    if(no){
+      if(!hexMap.has(no))hexMap.set(no,{no,name:xHexName(item),n:0});
+      hexMap.get(no).n++
+    }
+    const z=xZhiParts(item);
+    if(z){
+      if(!zhiMap.has(z.no))zhiMap.set(z.no,{...z,n:0});
+      zhiMap.get(z.no).n++
+    }
+    const mv=String(item.move||'').trim();
+    if(mv&&mv!=='なし'){
+      for(const part of mv.split('・')){
+        const k=part.trim();if(!k)continue;
+        moveMap.set(k,(moveMap.get(k)||0)+1)
+      }
+    }
   }
-  const rank=[...hexMap.values()].sort((a,b)=>b.n-a.n||a.no-b.no).slice(0,10);
-  const rankHtml=rank.length?rank.map((x,i)=>`<div style="display:grid;grid-template-columns:28px 1fr auto;gap:8px;padding:7px 0;border-bottom:1px solid rgba(127,127,127,.22)"><b>${i+1}</b><span>${x.no} ${esc(x.name)}</span><b>${x.n}回</b></div>`).join(''):'まだデータがありません';
+  const hexRank=[...hexMap.values()].sort((a,b)=>b.n-a.n||a.no-b.no);
+  const zhiRank=[...zhiMap.values()].sort((a,b)=>b.n-a.n||a.no-b.no);
+  const moveRank=[...moveMap.entries()].map(([name,n])=>({name,n})).sort((a,b)=>b.n-a.n||a.name.localeCompare(b.name,'ja'));
+  const rankHtml=xRankRows(hexRank,x=>`${x.no} ${x.name}`,x=>`${x.n}回`);
+  const zhiHtml=xRankRows(zhiRank,x=>`${x.no} ${x.name}`,x=>`${x.n}回`);
+  const moveHtml=xRankRows(moveRank,x=>x.name,x=>`${x.n}回`);
 
   const groups=new Map();
   for(const item of logs){
@@ -74,13 +112,37 @@ function xRenderAnalytics(){
     if(!groups.has(n))groups.set(n,[]);
     groups.get(n).push(item)
   }
-  const repeated=[...groups.values()].filter(a=>a.length>=2).sort((a,b)=>b.length-a.length||Math.max(...b.map(x=>Number(x.seq)||0))-Math.max(...a.map(x=>Number(x.seq)||0))).slice(0,12);
-  const historyHtml=repeated.length?repeated.map(a=>{
+  const repeated=[...groups.values()].filter(a=>a.length>=2).sort((a,b)=>b.length-a.length||Math.max(...b.map(x=>Number(x.seq)||0))-Math.max(...a.map(x=>Number(x.seq)||0)));
+  const questionRankHtml=xRankRows(repeated,a=>a[a.length-1].q,a=>`${a.length}回`);
+  const historyHtml=repeated.length?repeated.slice(0,12).map(a=>{
     const sorted=[...a].sort((x,y)=>(Number(x.seq)||0)-(Number(y.seq)||0));
     const q=sorted[sorted.length-1].q;
     const seqs=sorted.map(x=>`#${esc(x.seq)} ${esc(xVerdictText(x))}`).join(' → ');
     return `<div style="padding:9px 0;border-bottom:1px solid rgba(127,127,127,.22)"><div style="font-weight:700">${esc(q)}</div><div class="status">${a.length}回 ／ ${seqs}</div></div>`
   }).join(''):'同一質問の複数履歴はまだありません';
+
+  const verdictCounts={YES:0,NO:0,'中立':0,'未設定':0};
+  for(const item of logs){
+    const v=xVerdictText(item);
+    if(v==='YES')verdictCounts.YES++;
+    else if(v==='NO')verdictCounts.NO++;
+    else if(v==='中立')verdictCounts['中立']++;
+    else verdictCounts['未設定']++
+  }
+  const decided=verdictCounts.YES+verdictCounts.NO+verdictCounts['中立'];
+  const pct=n=>decided?((n/decided)*100).toFixed(1)+'%':'0.0%';
+  const verdictHtml=[
+    {label:'YES',n:verdictCounts.YES,p:pct(verdictCounts.YES)},
+    {label:'NO',n:verdictCounts.NO,p:pct(verdictCounts.NO)},
+    {label:'中立',n:verdictCounts['中立'],p:pct(verdictCounts['中立'])}
+  ].sort((a,b)=>b.n-a.n).map((x,i)=>`<div style="display:grid;grid-template-columns:28px 1fr auto;gap:8px;padding:7px 0;border-bottom:1px solid rgba(127,127,127,.22)"><b>${i+1}</b><span>${x.label}</span><b>${x.n}件・${x.p}</b></div>`).join('');
+
+  const personMap=new Map();
+  for(const item of logs){
+    for(const name of xPersonCandidates(item.q))personMap.set(name,(personMap.get(name)||0)+1)
+  }
+  const personRank=[...personMap.entries()].map(([name,n])=>({name,n})).filter(x=>x.n>=2).sort((a,b)=>b.n-a.n||a.name.localeCompare(b.name,'ja'));
+  const personHtml=xRankRows(personRank,x=>x.name,x=>`${x.n}件`);
 
   host.innerHTML=`
     <div class="title">分析</div>
@@ -90,12 +152,40 @@ function xRenderAnalytics(){
       <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px">${heat}</div>
     </details>
     <details style="margin-top:14px">
+      <summary style="font-weight:700;cursor:pointer">時間帯ランキング TOP10</summary>
+      <div style="margin-top:6px">${hourRankHtml}</div>
+    </details>
+    <details style="margin-top:14px">
+      <summary style="font-weight:700;cursor:pointer">よく占っている質問 TOP10</summary>
+      <div class="status" style="margin:6px 0">同文・軽い表記ゆれをまとめて集計</div>
+      <div>${questionRankHtml}</div>
+    </details>
+    <details style="margin-top:14px">
+      <summary style="font-weight:700;cursor:pointer">正式判定 YES / NO / 中立</summary>
+      <div class="status" style="margin:6px 0">正式判定済み ${decided}件。未設定 ${verdictCounts['未設定']}件は率から除外</div>
+      <div>${verdictHtml}</div>
+    </details>
+    <details style="margin-top:14px">
       <summary style="font-weight:700;cursor:pointer">本卦ランキング TOP10</summary>
       <div style="margin-top:6px">${rankHtml}</div>
     </details>
     <details style="margin-top:14px">
+      <summary style="font-weight:700;cursor:pointer">之卦ランキング TOP10</summary>
+      <div style="margin-top:6px">${zhiHtml}</div>
+    </details>
+    <details style="margin-top:14px">
+      <summary style="font-weight:700;cursor:pointer">変爻ランキング TOP10</summary>
+      <div class="status" style="margin:6px 0">複数変爻は各爻を1回ずつ数える</div>
+      <div>${moveHtml}</div>
+    </details>
+    <details style="margin-top:14px">
+      <summary style="font-weight:700;cursor:pointer">人物名らしき語ランキング TOP10</summary>
+      <div class="status" style="margin:6px 0">質問文から端末内で自動抽出。2件以上のみ表示</div>
+      <div>${personHtml}</div>
+    </details>
+    <details style="margin-top:14px">
       <summary style="font-weight:700;cursor:pointer">同一質問の履歴</summary>
-      <div class="status" style="margin:6px 0">表記ゆれを軽く正規化して、2回以上ある質問を表示</div>
+      <div class="status" style="margin:6px 0">2回以上ある質問の正式判定推移</div>
       <div>${historyHtml}</div>
     </details>`;
 }
