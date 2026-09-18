@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111111">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>研究ダッシュボード</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color-scheme:light dark}body{margin:0;background:#f5f5f7;color:#111}main{max-width:820px;margin:auto;padding:16px}.panel{background:#fff;border:1px solid #ddd;border-radius:16px;padding:16px;margin-bottom:14px}.title{font-size:20px;font-weight:800}.sub{font-size:16px;font-weight:800;margin-bottom:10px}.muted{opacity:.7}.small{font-size:12px}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.stat{border:1px solid #ddd;border-radius:14px;padding:12px}.big{font-size:26px;font-weight:900;line-height:1.1}.label{font-size:12px;opacity:.68;margin-top:4px}.row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:10px 0;border-bottom:1px solid rgba(127,127,127,.22)}.row:last-child{border-bottom:0}.name{font-weight:700;min-width:0;overflow-wrap:anywhere}.num{text-align:right;font-variant-numeric:tabular-nums}.warn{font-size:11px;opacity:.6}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}button,a.btn{font-size:14px;border:1px solid #bbb;border-radius:11px;padding:9px 12px;background:#fff;color:#111;cursor:pointer;text-decoration:none}.active{outline:2px solid currentColor;font-weight:800}.empty{opacity:.65;padding:8px 0}.meter{height:7px;border-radius:99px;background:rgba(127,127,127,.2);overflow:hidden;margin-top:6px}.meter>i{display:block;height:100%;background:currentColor;opacity:.5}.foot{margin:20px 0 8px}@media(min-width:700px){.grid{grid-template-columns:repeat(4,1fr)}}@media(prefers-color-scheme:dark){body{background:#111;color:#f5f5f7}.panel{background:#1c1c1e;border-color:#38383a}.stat{border-color:#444}button,a.btn{background:#2c2c2e;color:#fff;border-color:#555}}
+</style>
+</head>
+<body>
+<main>
+<section class="panel">
+  <div class="title">研究ダッシュボード</div>
+  <div id="status" class="muted" style="margin-top:6px"></div>
+  <div class="toolbar">
+    <button data-mode="all" class="active">全ログ</button>
+    <button data-mode="formal">正式判定あり</button>
+    <button data-mode="leo">レオ読み保存済み</button>
+  </div>
+</section>
+<section class="panel"><div class="sub">全体</div><div id="overall" class="grid"></div></section>
+<section class="panel"><div class="sub">未判定</div><div id="pending" class="grid"></div></section>
+<section class="panel"><div class="sub">予測方向</div><div id="prediction"></div></section>
+<section class="panel"><div class="sub">テーマ別</div><div class="muted small">的中率は判定済みだけで計算。判定済み n&lt;5 は参考値。</div><div id="topics"></div></section>
+<section class="panel"><div class="sub">本卦別</div><div class="muted small">出現件数の多い順。的中率だけで順位付けしません。</div><div id="hexes"></div></section>
+<section class="panel"><div class="sub">変爻数別</div><div id="moves"></div></section>
+<section class="panel"><div class="sub">研究データ確認</div><div id="quality"></div></section>
+<div class="foot"><a class="btn" href="index.html">← 台帳へ戻る</a> <a class="btn" href="search-all.html">全期間検索</a></div>
+</main>
+<script>
+const KEY='uranai-ledger-v1';
+let logs=[];try{logs=JSON.parse(localStorage.getItem(KEY))||[]}catch(e){}
+let mode='all';
+const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
+const esc=s=>String(s??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]));
+const judged=x=>x.grade==='当たり'||x.grade==='ハズレ';
+const correct=x=>x.grade==='当たり';
+const formal=x=>['YES','NO','中立'].includes(String(x.formalVerdict||'').trim())?String(x.formalVerdict).trim():'';
+function filtered(){if(mode==='formal')return logs.filter(x=>formal(x));if(mode==='leo')return logs.filter(x=>String(x.leoRead||'').trim());return logs}
+function pct(a,b){return b?`${(a/b*100).toFixed(1)}%`:'—'}
+function stat(value,label){return `<div class="stat"><div class="big">${esc(value)}</div><div class="label">${esc(label)}</div></div>`}
+function accText(arr){const j=arr.filter(judged),c=j.filter(correct).length;return j.length?`${pct(c,j.length)} (${c}/${j.length})`:`— (0/0)`}
+function row(name,arr,extra=''){const j=arr.filter(judged),c=j.filter(correct).length,p=j.length?pct(c,j.length):'—',w=j.length>0&&j.length<5?' <span class="warn">参考</span>':'';return `<div class="row"><div><div class="name">${esc(name)}</div>${extra?`<div class="muted small">${esc(extra)}</div>`:''}<div class="meter"><i style="width:${j.length?Math.max(0,Math.min(100,c/j.length*100)):0}%"></i></div></div><div class="num"><b>${p}</b>${w}<br><span class="small muted">${c}/${j.length} ／ 全${arr.length}</span></div></div>`}
+function moveCount(x){const raw=String(x.raw||'').match(/[6789]/g);if(raw&&raw.length===6)return raw.filter(v=>v==='6'||v==='9').length;if(!x.move||x.move==='なし')return 0;return String(x.move).split('・').filter(Boolean).length}
+function hexName(x){const s=String(x.ben||'').trim();return s.replace(/^\d+\s*/,'')||'不明'}
+function render(){
+ const a=filtered(),j=a.filter(judged),c=j.filter(correct).length,un=a.filter(x=>!judged(x));const t=today();
+ document.getElementById('status').textContent=`端末内の ${a.length}件を集計（元ログ ${logs.length}件）`;
+ document.getElementById('overall').innerHTML=stat(a.length,'全ログ')+stat(j.length,'判定済み')+stat(c,'当たり')+stat(pct(c,j.length),'的中率');
+ const overdue=un.filter(x=>x.check&&x.check<t).length,future=un.filter(x=>!x.check||x.check>=t).length;
+ document.getElementById('pending').innerHTML=stat(un.length,'未判定 合計')+stat(overdue,'期限切れ')+stat(future,'期限前・期限なし')+stat(pct(j.length,a.length),'判定率');
+ const dirs=['YES','NO','中立'];let ph='';for(const d of dirs){const z=a.filter(x=>formal(x)===d);if(d==='中立'){ph+=`<div class="row"><div class="name">中立</div><div class="num"><b>${z.length}件</b><br><span class="small muted">的中率は算出しない</span></div></div>`}else ph+=row(d,z)}const unknown=a.filter(x=>!formal(x));ph+=`<div class="row"><div class="name">正式判定なし</div><div class="num"><b>${unknown.length}件</b></div></div>`;document.getElementById('prediction').innerHTML=ph;
+ const tm=new Map();for(const x of a){const tags=x.entities&&Array.isArray(x.entities.topic)?x.entities.topic:[];for(const tag of new Set(tags.filter(Boolean))){if(!tm.has(tag))tm.set(tag,[]);tm.get(tag).push(x)}}const ta=[...tm.entries()].sort((p,q)=>q[1].length-p[1].length||String(p[0]).localeCompare(String(q[0]),'ja')).slice(0,20);document.getElementById('topics').innerHTML=ta.length?ta.map(([n,v])=>row(n,v)).join(''):'<div class="empty">テーマタグがまだありません</div>';
+ const hm=new Map();for(const x of a){const h=hexName(x);if(!hm.has(h))hm.set(h,[]);hm.get(h).push(x)}const ha=[...hm.entries()].sort((p,q)=>q[1].length-p[1].length||String(p[0]).localeCompare(String(q[0]),'ja')).slice(0,20);document.getElementById('hexes').innerHTML=ha.length?ha.map(([n,v])=>row(n,v)).join(''):'<div class="empty">データなし</div>';
+ const mm=new Map();for(const x of a){const n=moveCount(x),k=`${n}爻変`;if(!mm.has(k))mm.set(k,[]);mm.get(k).push(x)}document.getElementById('moves').innerHTML=[...mm.entries()].sort((p,q)=>Number(p[0][0])-Number(q[0][0])).map(([n,v])=>row(n,v)).join('');
+ const formalN=a.filter(x=>formal(x)).length,leoN=a.filter(x=>String(x.leoRead||'').trim()).length,checkN=a.filter(x=>x.check).length,tagN=a.filter(x=>x.entities&&Object.values(x.entities).some(v=>Array.isArray(v)&&v.length)).length;
+ document.getElementById('quality').innerHTML=`<div class="grid">${stat(formalN,'正式判定あり')}${stat(leoN,'レオ読み保存済み')}${stat(checkN,'答え合わせ予定日あり')}${stat(tagN,'タグあり')}</div><div class="muted small" style="margin-top:10px">正式判定がない古いログは、YES/NO別の的中率には混ぜません。テーマ別・本卦別では判定済みなら集計対象です。</div>`;
+}
+document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;document.querySelectorAll('[data-mode]').forEach(x=>x.classList.toggle('active',x===b));render()});
+render();
+</script>
+</body>
+</html>
