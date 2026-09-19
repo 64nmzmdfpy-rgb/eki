@@ -19,6 +19,7 @@
     <button data-mode="all" class="active">全ログ</button>
     <button data-mode="formal">正式判定あり</button>
     <button data-mode="leo">レオ読み保存済み</button>
+    <button id="csv">表示中をCSV保存</button>
   </div>
 </section>
 <section class="panel"><div class="sub">全体</div><div id="overall" class="grid"></div></section>
@@ -41,6 +42,8 @@ const correct=x=>x.grade==='当たり';
 const hasLeo=x=>String(x.leoRead||'').trim().length>0;
 const formal=x=>['YES','NO','中立'].includes(String(x.formalVerdict||'').trim())?String(x.formalVerdict).trim():'';
 function filtered(){if(mode==='formal')return logs.filter(x=>formal(x));if(mode==='leo')return logs.filter(hasLeo);return logs}
+function csvCell(v){const s=String(v??'');return /[",\r\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s}
+function saveCsv(){const a=filtered(),cols=['seq','date','q','raw','ben','move','zhi','formalVerdict','grade','check','topic_tags','important'],rows=[cols.join(',')];for(const x of a){const topics=x.entities&&Array.isArray(x.entities.topic)?x.entities.topic.join('|'):'';rows.push([x.seq,x.date,x.q,x.raw,x.ben,x.move,x.zhi,formal(x),x.grade,x.check,topics,x.important?'1':'0'].map(csvCell).join(','))}const now=new Date(),stamp=now.getFullYear()+String(now.getMonth()+1).padStart(2,'0')+String(now.getDate()).padStart(2,'0')+'_'+String(now.getHours()).padStart(2,'0')+String(now.getMinutes()).padStart(2,'0'),blob=new Blob(['\ufeff'+rows.join('\r\n')],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=`占い台帳_研究用_${mode}_${stamp}.csv`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 function pct(a,b){return b?`${(a/b*100).toFixed(1)}%`:'—'}
 function stat(value,label){return `<div class="stat"><div class="big">${esc(value)}</div><div class="label">${esc(label)}</div></div>`}
 function row(name,arr,extra=''){const j=arr.filter(judged),c=j.filter(correct).length,p=j.length?pct(c,j.length):'—',w=j.length>0&&j.length<5?' <span class="warn">参考</span>':'';return `<div class="row"><div><div class="name">${esc(name)}</div>${extra?`<div class="muted small">${esc(extra)}</div>`:''}<div class="meter"><i style="width:${j.length?Math.max(0,Math.min(100,c/j.length*100)):0}%"></i></div></div><div class="num"><b>${p}</b>${w}<br><span class="small muted">${c}/${j.length} ／ 全${arr.length}</span></div></div>`}
@@ -61,6 +64,7 @@ function render(){
  const ml=document.getElementById('missingLeo');if(!missing.length){ml.innerHTML='<div class="name">レオ読みなし：0件</div><div class="muted small">この集計範囲では全件にレオの読みが保存されています。</div>'}else{ml.innerHTML=`<div class="name">レオ読みなし一覧（${missing.length}件）</div>`+missing.sort((x,y)=>Number(x.seq||0)-Number(y.seq||0)).map(x=>`<div class="missingItem"><b>通算 #${esc(x.seq||'?')}</b> <span class="muted small">${esc(x.date||'')}</span><br>${esc(x.q||'')}</div>`).join('')}
 }
 document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;document.querySelectorAll('[data-mode]').forEach(x=>x.classList.toggle('active',x===b));render()});
+document.getElementById('csv').onclick=saveCsv;
 render();
 </script>
 </body>
