@@ -37,7 +37,7 @@ let logs=[];try{logs=JSON.parse(localStorage.getItem(KEY))||[]}catch(e){}
 let mode='all';
 const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
 const esc=s=>String(s??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]));
-const judged=x=>x.grade==='当たり'||x.grade==='ハズレ';
+const judged=x=>!x.researchExcluded&&(x.grade==='当たり'||x.grade==='ハズレ');
 const correct=x=>x.grade==='当たり';
 const hasLeo=x=>String(x.leoRead||'').trim().length>0;
 const formal=x=>['YES','NO','中立'].includes(String(x.formalVerdict||'').trim())?String(x.formalVerdict).trim():'';
