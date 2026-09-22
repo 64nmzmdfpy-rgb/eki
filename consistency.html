@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>占い台帳 整合性チェック</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color-scheme:light dark}body{margin:0;background:#f5f5f7;color:#111}main{max-width:760px;margin:auto;padding:16px}.panel,.card{background:#fff;border:1px solid #ddd;border-radius:16px;padding:16px;margin-bottom:14px}button,a{font-size:16px}.top{display:flex;gap:8px;align-items:center;justify-content:space-between}.title{font-size:20px;font-weight:800}.sub{opacity:.7;font-size:13px;margin-top:4px}.ok{font-weight:800}.warn{font-weight:800}.item{margin-top:10px;padding-top:10px;border-top:1px solid #ddd}.tag{display:inline-block;border:1px solid #bbb;border-radius:999px;padding:2px 8px;font-size:12px;margin-right:6px}.q{font-weight:700;margin-top:6px}.reason{margin-top:6px}.refs{font-size:13px;opacity:.75;margin-top:5px}.empty{opacity:.7}button{border:1px solid #bbb;border-radius:12px;padding:10px 14px;background:#fff;color:#111}a{color:inherit}@media(prefers-color-scheme:dark){body{background:#111;color:#f5f5f7}.panel,.card{background:#1c1c1e;border-color:#38383a}button{background:#2c2c2e;color:#fff;border-color:#555}.item{border-color:#38383a}}
+</style>
+</head>
+<body><main>
+<section class="panel"><div class="top"><div><div class="title">整合性チェック</div><div class="sub">判定やデータは変更しません。ルールで拾える食い違いだけ表示します。</div></div><button onclick="location.href='index.html'">台帳へ戻る</button></div></section>
+<section class="panel"><div id="summary"></div></section>
+<div id="out"></div>
+</main>
+<script>
+const KEY='uranai-ledger-v1';
+let logs=[];try{logs=JSON.parse(localStorage.getItem(KEY))||[]}catch(e){}
+const verdict=x=>String(x.formalVerdict||'').toUpperCase()||((String(x.leoRead||'').match(/最終判定\s*[：:]\s*(YES|NO)/i)||[])[1]||'').toUpperCase();
+const year=q=>{const m=String(q||'').match(/(20\d{2})年/);return m?Number(m[1]):null};
+const has=(q,s)=>String(q||'').includes(s);
+const seq=x=>Number(x.seq)||0;
+const link=x=>`<a href="result.html?seq=${encodeURIComponent(x.seq)}&from=consistency">#${x.seq}</a>`;
+const issues=[];
+function add(level,title,reason,items){const ids=[...new Set(items.map(x=>x.id))];if(ids.length<2&&level==='衝突')return;issues.push({level,title,reason,items:[...new Map(items.map(x=>[x.id,x])).values()]})}
+// 1) 同一質問のYES/NO衝突
+const byQ=new Map();for(const x of logs){const k=String(x.q||'').normalize('NFKC').replace(/[\s　。、！？!?・]/g,'');if(!k)continue;(byQ.get(k)||byQ.set(k,[]).get(k)).push(x)}
+for(const arr of byQ.values()){const vs=new Set(arr.map(verdict).filter(Boolean));if(vs.has('YES')&&vs.has('NO'))add('衝突','同一質問の判定が割れている','同じ質問にYESとNOの両方があります。',arr.filter(x=>verdict(x)))}
+// 2) 同一年・同じ2人で「交際YES」なのに「共演NO」→矛盾ではなく接点経路要確認
+const years=[...new Set(logs.map(x=>year(x.q)).filter(Boolean))];
+for(const y of years){const dating=logs.filter(x=>year(x.q)===y&&has(x.q,'交際')&&verdict(x)==='YES');const co=logs.filter(x=>year(x.q)===y&&has(x.q,'共演')&&verdict(x)==='NO');if(dating.length&&co.length)add('要確認',`${y}年：交際YES／共演NO`,`矛盾とは限りませんが、共演以外の接点ルートが必要です。`,[...dating,...co])}
+// 3) 連絡先交換年YESより後の交際年YESは自然、逆は要確認
+const contactYes=logs.filter(x=>has(x.q,'連絡先')&&has(x.q,'交換')&&year(x.q)&&verdict(x)==='YES');
+const datingYes=logs.filter(x=>has(x.q,'交際')&&year(x.q)&&verdict(x)==='YES');
+for(const d of datingYes)for(const c of contactYes){const yd=year(d.q),yc=year(c.q);if(yd<yc)add('要確認','交際年が連絡先交換年より早い','交際開始YESの年が、連絡先交換YESの年より前です。別の連絡手段があるなら両立します。',[d,c])}
+// 4) 「今好きNO」と「今連絡先交換したいYES」
+const likeNo=logs.filter(x=>/今.*好き/.test(String(x.q||''))&&verdict(x)==='NO');
+const wantYes=logs.filter(x=>/今.*連絡先.*交換したい/.test(String(x.q||''))&&verdict(x)==='YES');
+for(const a of likeNo)for(const b of wantYes)add('要確認','現在の感情と行動動機がズレる','「今好きではない」と「今連絡先を交換したい」が同時に出ています。興味・関心段階なら両立しますが、動機の確認が必要です。',[a,b]);
+// 5) 「最初に連絡するのはXか？」で複数YES
+const firstYes=logs.filter(x=>/最初に連絡するのは/.test(String(x.q||''))&&verdict(x)==='YES');
+if(firstYes.length>1)add('衝突','最初に連絡する人物が複数YES','同じ出来事で「最初に連絡する人」は通常1人なので、複数YESは直接衝突です。',firstYes);
+// 6) 共演年NOが連続し、その期間中に交際YES
+const coNo=logs.filter(x=>has(x.q,'共演')&&year(x.q)&&verdict(x)==='NO');
+for(const d of datingYes){const yd=year(d.q);const relevant=coNo.filter(x=>year(x.q)<=yd&&year(x.q)>=yd-2);if(relevant.length>=2)add('要確認','交際までの接点経路が不足','交際YESの年まで複数年にわたり共演NOが続いています。共演以外の接点が必要です。',[d,...relevant])}
+// 重複除去
+const seen=new Set(),uniq=[];for(const it of issues){const key=it.title+'|'+it.items.map(seq).sort((a,b)=>a-b).join(',');if(!seen.has(key)){seen.add(key);uniq.push(it)}}
+uniq.sort((a,b)=>a.level===b.level?0:(a.level==='衝突'?-1:1));
+document.getElementById('summary').innerHTML=uniq.length?`<div class="warn">要確認 ${uniq.length}件</div><div class="sub">うち直接衝突 ${uniq.filter(x=>x.level==='衝突').length}件</div>`:`<div class="ok">現在、ルールで検出できる食い違いはありません。</div>`;
+const out=document.getElementById('out');
+if(!logs.length){out.innerHTML='<section class="card empty">台帳データがありません。</section>'}
+else if(!uniq.length){out.innerHTML='<section class="card empty">問題なし。なお、意味が複雑な矛盾までは自動では判断しません。</section>'}
+else out.innerHTML=uniq.map(it=>`<section class="card"><span class="tag">${it.level}</span><div class="q">${it.title}</div><div class="reason">${it.reason}</div><div class="refs">関連：${it.items.sort((a,b)=>seq(a)-seq(b)).map(x=>`${link(x)} ${String(x.q||'')}`).join('<br>')}</div></section>`).join('');
+</script></body></html>
