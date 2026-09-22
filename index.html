@@ -13,7 +13,7 @@
 <main>
 <section class="panel"><div class="title">占う</div><textarea id="q" rows="3" placeholder="質問を入力"></textarea><button id="cast" class="primary">占う</button></section>
 <section class="panel"><div class="title">バックアップ</div><div class="toolbar"><button id="backup">バックアップを保存</button><button id="restoreBtn">バックアップから復元</button></div><input id="restoreFile" class="hidden" type="file" accept=".json,application/json"><div id="backupStatus" class="status"></div></section>
-<section class="panel"><div class="title">検索・抽出</div><div class="toolbar"><input id="search" placeholder="この日の検索"><button type="button" onclick="location.href='search-all.html?v=20260922-verdict2'">全期間検索</button></div></section>
+<section class="panel"><div class="title">検索・抽出</div><div class="toolbar"><input id="search" placeholder="この日の検索"><button type="button" onclick="location.href='search-all.html?v=20260922-verdict2'">全期間検索</button></div><button type="button" style="width:100%;margin-top:10px" onclick="location.href='consistency.html?v=20260922-1'">整合性チェック</button></section>
 <section class="panel"><div class="calhead"><button id="pm">←</button><b id="mt"></b><button id="nm">→</button></div><div class="week"><div>日</div><div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div>土</div></div><div id="calendar" class="calendar"></div><button id="today" style="width:100%;margin-top:8px">今月</button></section>
 <div id="dateTitle" class="title"></div><div id="cards"></div>
 </main>
