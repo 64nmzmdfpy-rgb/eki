@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>占い台帳・時系列</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color-scheme:light dark}
+*{box-sizing:border-box}body{margin:0;background:#f5f5f7;color:#111}main{max-width:980px;margin:auto;padding:14px}.panel{background:#fff;border:1px solid #ddd;border-radius:16px;padding:14px;margin-bottom:12px}h1{font-size:20px;margin:0 0 6px}.muted{opacity:.65}.small{font-size:12px}.toolbar{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:10px}input,select,button,a.btn{font:inherit;border:1px solid #bbb;border-radius:10px;padding:9px 10px;background:#fff;color:inherit;text-decoration:none}button{cursor:pointer}.summary{margin-top:8px;font-size:13px}.sectionTitle{position:sticky;top:0;z-index:3;background:#f5f5f7;padding:12px 4px 7px;font-size:16px;font-weight:800}.row{display:grid;grid-template-columns:92px minmax(0,1fr) 62px 54px 48px;gap:8px;align-items:center;background:#fff;border:1px solid #ddd;border-radius:12px;padding:9px 10px;margin-bottom:6px;cursor:pointer}.when{font-weight:800;font-size:13px}.q{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:650}.verdict,.conf,.seq{text-align:center;font-size:13px;font-weight:800}.yes{color:#16794a}.no{color:#b42318}.detail{display:none;grid-column:1/-1;border-top:1px solid #ddd;margin-top:4px;padding-top:9px;font-size:13px;line-height:1.55}.row.open .detail{display:block}.detail .fullq{font-weight:800;margin-bottom:6px}.detail pre{white-space:pre-wrap;font:inherit;margin:6px 0;max-height:340px;overflow:auto}.detail a{display:inline-block;margin-top:6px}.empty{padding:20px;text-align:center;opacity:.65}.nav{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}@media(max-width:700px){.row{grid-template-columns:72px minmax(0,1fr) 48px 40px}.seq{display:none}.q{font-size:14px}.when,.verdict,.conf{font-size:12px}}
+@media(prefers-color-scheme:dark){body{background:#111;color:#f5f5f7}.panel,.row{background:#1c1c1e;border-color:#38383a}.sectionTitle{background:#111}input,select,button,a.btn{background:#1c1c1e;color:#fff;border-color:#555}.detail{border-color:#38383a}.yes{color:#59d98e}.no{color:#ff7b72}}
+</style>
+</head>
+<body><main>
+<section class="panel">
+<h1>時系列</h1>
+<div class="muted small">質問を1行で並べます。行を押すと詳細を開きます。年月がない質問は「結婚後」「交際後」「最終的に」「時期未指定」に分けます。</div>
+<div class="toolbar"><input id="search" placeholder="質問・通算番号・判定で絞り込み"><select id="order"><option value="timeline">時系列順</option><option value="new">新しい順</option><option value="old">古い順</option></select></div>
+<div id="summary" class="summary muted"></div>
+<div class="nav"><a class="btn" href="./">← 本番台帳</a><a class="btn" href="search-all.html">全期間検索</a></div>
+</section>
+<div id="list"></div>
+<script>
+const KEY='uranai-ledger-v1';let logs=[];try{logs=JSON.parse(localStorage.getItem(KEY))||[]}catch(e){}
+const $=id=>document.getElementById(id);function esc(s){return String(s??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]))}
+function normalizeFormal(v){v=String(v||'').trim().toUpperCase();if(v==='YES'||v==='強YES'||v==='弱YES')return'YES';if(v==='NO'||v==='強NO'||v==='弱NO')return'NO';return''}
+function parseLeoVerdict(text){const m=[...String(text||'').matchAll(/最終判定\s*[：:]\s*(YES|NO|強YES|弱YES|弱NO|強NO)/gi)].pop();return m?normalizeFormal(m[1]):''}
+function parseLeoConfidence(text){const m=[...String(text||'').matchAll(/確信度\s*[：:]\s*(低|中|高)/g)].pop();return m?m[1]:''}
+function formalOf(x){return parseLeoVerdict(x.leoRead)||normalizeFormal(x.formalVerdict)||'—'}
+function confidenceOf(x){const c=parseLeoConfidence(x.leoRead)||String(x.confidence||'').trim();return ['低','中','高'].includes(c)?c:'—'}
+function timeInfo(q){q=String(q||'');let m=q.match(/(20\d{2})年\s*(前半|後半)/);if(m)return{label:m[1]+m[2],group:Number(m[1])*10+(m[2]==='前半'?1:2),rank:1};m=q.match(/(20\d{2})年(?:中|まで|以内|に|は|$)?/);if(m)return{label:m[1],group:Number(m[1])*10,rank:1};m=q.match(/(20\d{2})年中まで/);if(m)return{label:'～'+m[1],group:Number(m[1])*10+9,rank:1};if(/結婚後/.test(q))return{label:'結婚後',group:900001,rank:2};if(/婚約後/.test(q))return{label:'婚約後',group:900002,rank:2};if(/交際後/.test(q))return{label:'交際後',group:900003,rank:2};if(/共演後/.test(q))return{label:'共演後',group:900004,rank:2};if(/最終的/.test(q))return{label:'最終的に',group:900010,rank:3};return{label:'時期未指定',group:999999,rank:4}}
+function shortQ(q){let s=String(q||'').trim();s=s.replace(/^【念押し】\s*/,'【念押し】');s=s.replace(/^M!LKの曽野舜太と芦田愛菜は/,'');s=s.replace(/^芦田愛菜とM!LKの曽野舜太は/,'');return s||q}
+function render(){const term=$('search').value.trim().toLowerCase(),order=$('order').value;let arr=logs.filter(x=>{const hay=[x.q,x.seq,formalOf(x),confidenceOf(x),x.leoRead].join(' ').toLowerCase();return !term||hay.includes(term)}).map(x=>({...x,_time:timeInfo(x.q)}));if(order==='timeline')arr.sort((a,b)=>a._time.group-b._time.group||Number(a.seq||0)-Number(b.seq||0));else if(order==='new')arr.sort((a,b)=>Number(b.seq||0)-Number(a.seq||0));else arr.sort((a,b)=>Number(a.seq||0)-Number(b.seq||0));$('summary').textContent=`${arr.length}件表示 ／ 全${logs.length}件`;
+if(!arr.length){$('list').innerHTML='<div class="panel empty">該当なし</div>';return}
+let html='',last='';for(const x of arr){const section=order==='timeline'?x._time.label:'一覧';if(section!==last){html+=`<div class="sectionTitle">${esc(section)}</div>`;last=section}const v=formalOf(x),c=confidenceOf(x),cls=v==='YES'?'yes':v==='NO'?'no':'';html+=`<div class="row" data-seq="${esc(x.seq)}"><div class="when">${esc(x._time.label)}</div><div class="q" title="${esc(x.q)}">${esc(shortQ(x.q))}</div><div class="verdict ${cls}">${esc(v)}</div><div class="conf">${esc(c)}</div><div class="seq">#${esc(x.seq||'—')}</div><div class="detail"><div class="fullq">#${esc(x.seq||'—')} ${esc(x.q)}</div><div>判定：<b class="${cls}">${esc(v)}</b> ／ 確信度：<b>${esc(c)}</b>${x.grade?` ／ 答え合わせ：<b>${esc(x.grade)}</b>`:''}</div>${x.leoRead?`<pre>${esc(x.leoRead)}</pre>`:''}<a href="result.html?seq=${encodeURIComponent(x.seq||'')}">詳細ページを開く</a></div></div>`}
+$('list').innerHTML=html;document.querySelectorAll('.row').forEach(r=>r.addEventListener('click',e=>{if(e.target.closest('a'))return;r.classList.toggle('open')}))}
+$('search').addEventListener('input',render);$('order').addEventListener('change',render);render();
+</script>
+</main></body></html>
