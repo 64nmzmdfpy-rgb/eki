@@ -11,13 +11,13 @@ function eki14DetectCategory(q){
   return 13;
 }
 function eki14Negative(q){return /しない|ないのか|起こらない|成立しない|ならない|続かない|残らない|買わない|持たない|売らない|辞めない|離れない|別れない|発生しない/.test(String(q||''))}
-function eki14Judge(q,lines,b,c,mv){
+function eki14Judge(q,b,c,mv){
   const catNo=eki14DetectCategory(q), k=EKI14_INDEX[catNo];
   const hn=Number(b[0]), zn=Number(c[0]);
   let score;
   if(mv.length){
     let sum=0,count=0;
-    for(let i=0;i<lines.length;i++){if(lines[i]===6||lines[i]===9){sum+=EKI14_L[hn-1][i][k];count++}}
+    for(const label of mv){const s=String(label);let i=-1;if(s.indexOf('初')>=0)i=0;else if(s.indexOf('二')>=0)i=1;else if(s.indexOf('三')>=0)i=2;else if(s.indexOf('四')>=0)i=3;else if(s.indexOf('五')>=0)i=4;else if(s.indexOf('上')>=0)i=5;if(i>=0){sum+=EKI14_L[hn-1][i][k];count++}}
     score=0.25*EKI14_Q[hn-1][k]+0.5*(sum/count)+0.25*EKI14_Q[zn-1][k];
   }else{score=EKI14_Q[hn-1][k]}
   const threshold=EKI14_THRESH[k];
