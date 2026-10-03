@@ -37,7 +37,36 @@ function esc(s){return String(s??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&l
 function parseLeoVerdict(text){const m=[...String(text||'').matchAll(/最終判定\s*[：:]\s*(YES|NO)/gi)].pop();return m?m[1].toUpperCase():''}
 function parseLeoConfidence(text){const m=[...String(text||'').matchAll(/確信度\s*[：:]\s*(低|中|高)/g)].pop();return m?m[1]:''}
 function saveFormalFromLeo(item){const text=String(item.leoRead||''),v=parseLeoVerdict(text),c=parseLeoConfidence(text);if(v){item.formalVerdict=v;item.formalVerdictSavedAt=new Date().toISOString()}else{delete item.formalVerdict;delete item.formalVerdictSavedAt}if(c){item.confidence=c;item.confidenceSavedAt=new Date().toISOString()}else{delete item.confidence;delete item.confidenceSavedAt}}
-function leoPrompt(item){return `次の易占いを、質問そのものに即して詳しく読んでください。一般的な卦のキーワードを並べるだけではなく、この質問では本卦が何を意味するか、変爻が何を動かすか、之卦が最終的に何を示すかを自然な日本語で説明してください。台帳の機械判定は参考情報であり、読解の結論には使用しないでください。質問・本卦・変爻・之卦から独立してYES／NOを決めてください。最後に判定はYES／NOの二択で出し、判定とは別に確信度を低／中／高の3段階で出してください。中立は使わないでください。返答はそのまま台帳へ貼って保存するので、JSONやコードブロックは不要です。\n\n重要：返答の最後は必ず独立した2行で、1行目を「最終判定：YES」または「最終判定：NO」、2行目を「確信度：低」「確信度：中」「確信度：高」のいずれかにしてください。この表記は変えないでください。\n\n通算番号：${item.seq}\n質問：${item.q}\n生データ（初爻→上爻）：${item.raw}\n本卦：${item.ben}\n変爻：${item.move}\n之卦：${item.zhi}`}
+function leoPrompt(item){return `次の易占いを、質問そのものに即して詳しく読んでください。これは結果を後付けで合わせる作業ではなく、最初から判定手順を固定して一度だけ結論を出す読解です。
+
+【固定読解手順】
+1. まず質問文を、何が成立する／しないことを問うているのか一文で正確に言い換える。質問が否定形でも、YESが何を意味するのかを明確にする。
+2. 本卦を「質問時点の構図」として読む。卦名だけを見てYES/NOに直結させない。たとえば「困難」「停滞」「距離」などの性質があっても、それだけで不成立とは断定しない。
+3. 変爻がある場合は、各変爻を一つずつ読む。爻位だけでなく爻辞の内容と本卦の中での位置づけを踏まえ、「この質問に対して何が動くのか」を具体化する。複数の変爻がある場合、都合のよい一爻だけを採用しない。
+4. 之卦を「変化後の最終構図」として読む。之卦の卦名だけで結論を決めない。之卦が吉そう／悪そうという印象だけでYES/NOにしない。
+5. 本卦・変爻・之卦を一本の時間的な流れとしてつなぐ。「開始時の状態→何が動く→最終的にどうなるか」を示す。
+6. 最終判定の前に、YESを支持する具体的な材料とNOを支持する具体的な材料を内部で両方確認する。そのうえで、質問そのものに対してどちらが優勢かを一度だけ決める。
+7. 一度決めた最終判定は、既存の結果、台帳の機械判定、利用者の期待・反応、以前の読解に合わせて変更しない。逆方向の読みが可能な場合は、その点を本文で説明したうえで最初の判定を維持する。
+8. 確信度は「願望に合うか」ではなく、卦・変爻・之卦の三者が同じ方向を示しているか、重要な反証があるか、質問への対応が明確かで決める。
+
+【特に禁止】
+・卦名の一般論だけで「結婚ではない」「恋愛には弱い」などと短絡しない。
+・之卦が受け身・停止・困難などの性質だからというだけでNOにしない。
+・「結婚するか」という問いに対し、「障害がある」ことだけを理由に結婚しないと断定しない。
+・逆に、好意・接近・支援などがあることだけを理由に結婚すると断定しない。
+・利用者の反応を見てYES/NOを変更しない。
+・機械判定を根拠にしない。
+
+台帳の機械判定は参考情報であり、読解の結論には使用しないでください。質問・本卦・変爻・之卦から独立してYES／NOを決めてください。一般的な卦のキーワードを並べるだけではなく、この質問では本卦が何を意味するか、各変爻が何を動かすか、之卦が最終的に何を示すかを自然な日本語で説明してください。返答はそのまま台帳へ貼って保存するので、JSONやコードブロックは不要です。中立は使わないでください。
+
+重要：返答の最後は必ず独立した2行で、1行目を「最終判定：YES」または「最終判定：NO」、2行目を「確信度：低」「確信度：中」「確信度：高」のいずれかにしてください。この表記は変えないでください。
+
+通算番号：${item.seq}
+質問：${item.q}
+生データ（初爻→上爻）：${item.raw}
+本卦：${item.ben}
+変爻：${item.move}
+之卦：${item.zhi}`}
 async function copyText(text){try{await navigator.clipboard.writeText(text);return true}catch(e){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();const ok=document.execCommand('copy');ta.remove();return ok}}
 async function sendToLeo(item,btn){const prompt=leoPrompt(item);const ok=await copyText(prompt);btn.textContent=ok?'占い文をコピーした':'コピーできなかった';setTimeout(()=>btn.textContent='レオに読ませる',1800)}
 async function pasteLeo(item,area,btn){btn.textContent='貼り付けを待っています…';area.focus();try{if(!navigator.clipboard||!navigator.clipboard.readText)throw new Error();const text=await navigator.clipboard.readText();if(!text)throw new Error();area.value=text;item.leoRead=text;item.leoSavedAt=new Date().toISOString();saveFormalFromLeo(item);saveLocal();render();btn.textContent='貼り付け・保存済み'}catch(e){area.focus();const end=area.value.length;try{area.setSelectionRange(end,end)}catch(_e){}btn.textContent='⌘Vで貼り付け（自動保存）'}}
