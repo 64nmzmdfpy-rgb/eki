@@ -77,6 +77,18 @@ body{font-family:system-ui,sans-serif;max-width:760px;margin:24px auto;padding:0
     return result.categoryNo === 22 && result.questionNegative === true;
   });
 
+  test('「株を買うか」は株価上昇ではなく購入判断に分類', function(){
+    return eki14DetectCategory('株を買うか') === 22;
+  });
+
+  test('「株価は上がるか」は相場上昇に分類', function(){
+    return eki14DetectCategory('株価は上がるか') === 12;
+  });
+
+  test('「株を売らない」は売却判断に分類', function(){
+    return eki14DetectCategory('株を売らない') === 24;
+  });
+
   test('範囲外の卦番号ではYES/NOを捏造せず要確認', function(){
     const result = eki14Judge('結婚するか', [99, '本卦'], [2, '之卦'], []);
     return result.answer === '要確認' && result.score === null;
