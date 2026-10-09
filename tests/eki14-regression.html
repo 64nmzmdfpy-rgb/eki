@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EKI14 回帰テスト</title>
+<style>
+body{font-family:system-ui,sans-serif;max-width:760px;margin:24px auto;padding:0 16px}
+.pass{color:#16733c}.fail{color:#b42318}li{margin:6px 0}code{background:#f2f2f2;padding:2px 4px}
+</style>
+</head>
+<body>
+<h1>EKI14 回帰テスト</h1>
+<p>個人情報を含まない、変爻位置解析とスコア計算の簡易テストです。</p>
+<ul id="results"></ul>
+<p id="summary"></p>
+<script src="../eki14.js"></script>
+<script>
+(function(){
+  const results = document.getElementById('results');
+  let passed = 0, failed = 0;
+  function test(name, fn){
+    const li = document.createElement('li');
+    try {
+      if (!fn()) throw new Error('条件を満たしません');
+      li.className = 'pass';
+      li.textContent = 'PASS: ' + name;
+      passed++;
+    } catch (error) {
+      li.className = 'fail';
+      li.textContent = 'FAIL: ' + name + ' (' + error.message + ')';
+      failed++;
+    }
+    results.appendChild(li);
+  }
+
+  const cases = [
+    ['初九', 0], ['初六', 0],
+    ['九2', 1], ['六3', 2], ['九4', 3], ['六5', 4],
+    ['上九', 5], ['上六', 5],
+    ['二爻', 1], ['三爻', 2], ['四爻', 3], ['五爻', 4]
+  ];
+  cases.forEach(function(item){
+    test('変爻ラベル ' + item[0] + ' → ' + item[1], function(){
+      return eki14MoveIndex(item[0]) === item[1];
+    });
+  });
+
+  test('複数の変爻で有限スコアを返す', function(){
+    const result = eki14Judge('結婚するか', [1, '本卦'], [2, '之卦'], ['九2', '九5']);
+    return Number.isFinite(result.score) && result.answer !== undefined;
+  });
+
+  test('変爻ラベルが解析不能でも NaN を返さない', function(){
+    const result = eki14Judge('交際するか', [1, '本卦'], [2, '之卦'], ['不明なラベル']);
+    return Number.isFinite(result.score) &&
+      result.detail.includes('本卦スコアのみで計算');
+  });
+
+  test('変爻なしでも有限スコアを返す', function(){
+    const result = eki14Judge('株を買うか', [1, '本卦'], [2, '之卦'], []);
+    return Number.isFinite(result.score);
+  });
+
+  document.getElementById('summary').textContent =
+    '結果: ' + passed + ' 件成功 / ' + failed + ' 件失敗';
+})();
+</script>
+</body>
+</html>
