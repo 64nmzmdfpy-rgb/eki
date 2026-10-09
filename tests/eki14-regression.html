@@ -62,6 +62,26 @@ body{font-family:system-ui,sans-serif;max-width:760px;margin:24px auto;padding:0
     return Number.isFinite(result.score);
   });
 
+  test('否定形の結婚質問はイベント否定として認識', function(){
+    const result = eki14Judge('結婚しないか', [1, '本卦'], [2, '之卦'], []);
+    return result.categoryNo === 5 && result.questionNegative === true;
+  });
+
+  test('「買って後悔しないか」は購入判断を誤反転しない', function(){
+    const result = eki14Judge('買って後悔しないか', [1, '本卦'], [2, '之卦'], []);
+    return result.categoryNo === 22 && result.questionNegative === false;
+  });
+
+  test('「買わない方がいいか」は購入の否定として認識', function(){
+    const result = eki14Judge('買わない方がいいか', [1, '本卦'], [2, '之卦'], []);
+    return result.categoryNo === 22 && result.questionNegative === true;
+  });
+
+  test('範囲外の卦番号ではYES/NOを捏造せず要確認', function(){
+    const result = eki14Judge('結婚するか', [99, '本卦'], [2, '之卦'], []);
+    return result.answer === '要確認' && result.score === null;
+  });
+
   document.getElementById('summary').textContent =
     '結果: ' + passed + ' 件成功 / ' + failed + ' 件失敗';
 })();
