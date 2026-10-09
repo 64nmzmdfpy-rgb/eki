@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#111111">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>占い台帳</title>
 <style>
 :root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color-scheme:light dark}body{margin:0;background:#f5f5f7;color:#111}main{max-width:760px;margin:auto;padding:16px}.panel,.card{background:#fff;border:1px solid #ddd;border-radius:16px;padding:16px;margin-bottom:14px}textarea,input{box-sizing:border-box;width:100%;padding:12px;border:1px solid #ccc;border-radius:12px;font-size:16px}button{font-size:16px;border:1px solid #bbb;border-radius:12px;padding:11px 14px;background:#fff;color:#111;cursor:pointer}.primary{width:100%;font-weight:700;background:#111;color:#fff;border-color:#111}.leo{width:100%;font-weight:700;margin-top:10px}.three{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.title{font-size:18px;font-weight:700}.muted{opacity:.72}.qrow{display:flex;align-items:flex-start;gap:6px;margin:6px 0}.q{font-weight:700;flex:1;min-width:0}.copyq{width:auto;flex:0 0 auto;padding:3px 7px;border-radius:8px;font-size:11px;line-height:1.4;opacity:.72}.verdict{font-size:18px;font-weight:800;margin-top:10px}.formalVerdict{font-size:18px;font-weight:800;margin-top:6px}.detail{display:none;border-top:1px solid #ddd;margin-top:14px;padding-top:14px}.card.open .detail{display:block}.active{outline:2px solid currentColor;font-weight:700}.danger{width:100%;margin-top:12px}.quickDelete{width:100%;margin-top:10px;font-weight:700}.toolbar{display:grid;grid-template-columns:1fr 1fr;gap:10px}.status{font-size:13px;margin-top:8px;opacity:.72}.calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.day{min-height:48px;padding:4px;border-radius:10px;font-size:13px}.day b{display:block}.day.sel{outline:2px solid currentColor}.week{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:12px;opacity:.65;margin-bottom:4px}.calhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}.hidden{display:none!important}.saved{font-size:13px;opacity:.72;margin-top:6px}.numline{font-size:13px;font-weight:700;opacity:.75;margin-bottom:6px}@media(prefers-color-scheme:dark){body{background:#111;color:#f5f5f7}.card,.panel{background:#1c1c1e;border-color:#38383a}input,textarea{background:#111;color:#fff;border-color:#444}button{background:#2c2c2e;color:#fff;border-color:#555}.primary{background:#f5f5f7;color:#111}.copyq{background:#2c2c2e}}
@@ -133,7 +136,7 @@ document.getElementById('backup').onclick=saveBackup;
 document.getElementById('restoreBtn').onclick=()=>document.getElementById('restoreFile').click();document.getElementById('restoreFile').onchange=async ev=>{const f=ev.target.files[0];if(!f)return;try{const data=JSON.parse(await f.text());if(!Array.isArray(data.logs))throw new Error();if(confirm(`バックアップ ${data.logs.length}件で現在の台帳を置き換える？`)){logs=data.logs;maxSeq=Number(data.maxSeq||0);for(const x of logs){if(Number(x.seq)>maxSeq)maxSeq=Number(x.seq)}for(const x of logs){if(!x.seq){maxSeq++;x.seq=maxSeq}}saveLocal();render();document.getElementById('backupStatus').textContent=`復元完了：${f.name}`}}catch(e){alert('台帳バックアップとして読めませんでした')}ev.target.value=''};
 updateBackupHelp();saveLocal();render();
 </script>
-<script src="extras.js?v=20260920-repair3"></script>
-<script src="eki14.js?v=20261003-1"></script>
+<script src="extras.js?v=20261009-leo2"></script>
+<script src="eki14.js?v=20261009-leo2"></script>
 </body>
 </html>
