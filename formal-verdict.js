@@ -21,10 +21,7 @@ function detectFormalVerdict(text){
   return{value:'',level:'要確認',reason:hits.length>1?'YES/NO/中立の表現が混在':'判定表現を安全に特定できず'};
 }
 
-leoPrompt=function(item){
-  return `次の易占いを、質問そのものに即して詳しく読んでください。一般的な卦のキーワードを並べるだけではなく、この質問では本卦が何を意味するか、変爻が何を動かすか、之卦が最終的に何を示すかを自然な日本語で説明してください。最後は必ず独立した1行で「最終判定：YES」「最終判定：NO」「最終判定：中立」のいずれか1つだけを書いてください。返答はそのまま台帳へ貼って保存するので、JSONやコードブロックは不要です。\n\n通算番号：${item.seq}\n質問：${item.q}\n生データ（初爻→上爻）：${item.raw}\n本卦：${item.ben}\n変爻：${item.move}\n之卦：${item.zhi}`;
-};
-
+// Keep the detailed, data-validated leoPrompt defined by index.html; do not replace it with a shorter legacy prompt.
 const baseRender=render;
 render=function(){
   baseRender();
