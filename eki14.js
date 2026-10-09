@@ -10,19 +10,42 @@ function eki14DetectCategory(q){
   for(const rule of EKI14_RULES){for(const k of rule[1]){if(s.includes(k))return rule[0]}}
   return 13;
 }
+function eki14MoveIndex(label){
+  const s=String(label||'');
+  if(s.includes('初'))return 0;
+  if(s.includes('上'))return 5;
+  const digit=s.match(/[1-6]/);
+  if(digit)return Number(digit[0])-1;
+  if(s.includes('二'))return 1;
+  if(s.includes('三'))return 2;
+  if(s.includes('四'))return 3;
+  if(s.includes('五'))return 4;
+  return -1;
+}
 function eki14Negative(q){return /しない|ないのか|起こらない|成立しない|ならない|続かない|残らない|買わない|持たない|売らない|辞めない|離れない|別れない|発生しない/.test(String(q||''))}
 function eki14Judge(q,b,c,mv){
   const catNo=eki14DetectCategory(q), k=EKI14_INDEX[catNo];
   const hn=Number(b[0]), zn=Number(c[0]);
-  let score;
+  let score, moveWarning='';
   if(mv.length){
     let sum=0,count=0;
-    for(const label of mv){const s=String(label);let i=-1;if(s.indexOf('初')>=0)i=0;else if(s.indexOf('二')>=0)i=1;else if(s.indexOf('三')>=0)i=2;else if(s.indexOf('四')>=0)i=3;else if(s.indexOf('五')>=0)i=4;else if(s.indexOf('上')>=0)i=5;if(i>=0){sum+=EKI14_L[hn-1][i][k];count++}}
-    score=0.25*EKI14_Q[hn-1][k]+0.5*(sum/count)+0.25*EKI14_Q[zn-1][k];
+    for(const label of mv){
+      const i=eki14MoveIndex(label);
+      if(i>=0 && EKI14_L[hn-1] && Number.isFinite(EKI14_L[hn-1][i][k])){
+        sum+=EKI14_L[hn-1][i][k];
+        count++;
+      }
+    }
+    if(count>0){
+      score=0.25*EKI14_Q[hn-1][k]+0.5*(sum/count)+0.25*EKI14_Q[zn-1][k];
+    }else{
+      score=EKI14_Q[hn-1][k];
+      moveWarning=' 変爻位置を解析できなかったため、本卦スコアのみで計算。';
+    }
   }else{score=EKI14_Q[hn-1][k]}
   const threshold=EKI14_THRESH[k];
   let raw=score>threshold?'YES':'NO';
   const negative=eki14Negative(q);
   const answer=negative?(raw==='YES'?'NO':'YES'):raw;
-  return {answer:answer,verdict:answer,rawAnswer:raw,categoryNo:catNo,category:EKI14_CATS[k].name,score:score,threshold:threshold,centered:score-threshold,method:'IChing-14Axis-Centered-v1',questionNegative:negative,summary:'14軸Centered v1：'+EKI14_CATS[k].name+' ／ スコア '+score.toFixed(2)+'・基準 '+threshold+' → '+answer,detail:'14軸Centered v1。'+EKI14_CATS[k].name+'を基準に、卦辞・変爻・之卦を固定重みで合成。スコア差 '+(score-threshold).toFixed(2)+'。'+(negative?' 否定形質問のため最終判定を反転。':'')};
+  return {answer:answer,verdict:answer,rawAnswer:raw,categoryNo:catNo,category:EKI14_CATS[k].name,score:score,threshold:threshold,centered:score-threshold,method:'IChing-14Axis-Centered-v1',questionNegative:negative,summary:'14軸Centered v1：'+EKI14_CATS[k].name+' ／ スコア '+score.toFixed(2)+'・基準 '+threshold+' → '+answer,detail:'14軸Centered v1。'+EKI14_CATS[k].name+'を基準に、卦辞・変爻・之卦を固定重みで合成。スコア差 '+(score-threshold).toFixed(2)+'。'+(negative?' 否定形質問のため最終判定を反転。':'')+moveWarning};
 }
