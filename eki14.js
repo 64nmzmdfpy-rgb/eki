@@ -7,6 +7,14 @@ const EKI14_RULES=[[5,["結婚","婚約"]],[6,["離婚","破局"]],[26,["縁切�
 const EKI14_INDEX=Object.fromEntries(EKI14_CATS.map(function(x,i){return [x.no,i]}));
 function eki14DetectCategory(q){
   const s=String(q||'');
+  // 具体的な売買・保有判断を「株価上昇」と誤分類しないよう、行動語を先に判定。
+  const actionRules=[
+    [22,["購入","買って","買う","買わ"]],
+    [23,["保有","持ち続け","持た"]],
+    [24,["売却","売る","売ら","手放す"]],
+    [25,["廃棄","処分"]]
+  ];
+  for(const rule of actionRules){for(const k of rule[1]){if(s.includes(k))return rule[0]}}
   for(const rule of EKI14_RULES){for(const k of rule[1]){if(s.includes(k))return rule[0]}}
   return 13;
 }
