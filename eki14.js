@@ -22,11 +22,48 @@ function eki14MoveIndex(label){
   if(s.includes('五'))return 4;
   return -1;
 }
-function eki14Negative(q){return /しない|ないのか|起こらない|成立しない|ならない|続かない|残らない|買わない|持たない|売らない|辞めない|離れない|別れない|発生しない/.test(String(q||''))}
+function eki14Negative(q,catNo){
+  const s=String(q||'').replace(/[\\s　]+/g,'');
+  // 「後悔しない」は購入そのものの否定ではないため、購入判断を反転しない。
+  if(catNo===22){
+    if(/後悔しない|損しない|失敗しない/.test(s))return false;
+    return /買わない|購入しない|買わずに|買わない方がいい|購入を見送|買うべきではない/.test(s);
+  }
+  const patterns={
+    1:/共演しない|共演がない|接点がない|接触しない|接点を持たない/,
+    2:/好意がない|好きではない|惹かれない|恋愛感情がない/,
+    3:/交際しない|付き合わない|交際に至らない|恋愛関係にならない/,
+    4:/ライバルがいない|第三者がいない/,
+    5:/結婚しない|婚約しない|結婚に至らない|結婚できない|結婚することはない/,
+    6:/離婚しない|破局しない|別れない/,
+    7:/妊娠しない|出産しない|子供ができない/,
+    8:/子供の将来が明るくない|子供が成功しない/,
+    9:/仕事を続けない|勤務を続けない|働き続けない/,
+    10:/辞めない|退職しない|離脱しない|移籍しない/,
+    11:/うまくいかない|成功しない|問題が解決しない/,
+    12:/上がらない|上昇しない|値上がりしない|上昇が続かない/,
+    13:/成功しない|ヒットしない/,
+    14:/人気が上がらない|評判が上がらない|知名度が上がらない/,
+    15:/露出が増えない|仕事量が増えない|出演本数が増えない/,
+    16:/回復しない|良くならない|改善しない/,
+    18:/承認されない|支持されない|認められない/,
+    19:/試合に勝たない|試合に勝てない|対戦に勝てない/,
+    20:/成績が出ない|好成績を出せない/,
+    21:/優勝しない|タイトルを取れない|大会を制しない/,
+    23:/保有しない|持ち続けない/,
+    24:/売らない|売却しない|手放さない/,
+    25:/廃棄しない|処分しない/,
+    26:/縁を切らない|関係を整理しない/
+  };
+  return Boolean(patterns[catNo]&&patterns[catNo].test(s));
+}
 function eki14Judge(q,b,c,mv){
   const catNo=eki14DetectCategory(q), k=EKI14_INDEX[catNo];
   const hn=Number(b[0]), zn=Number(c[0]);
   let score, moveWarning='';
+  if(!Number.isInteger(hn)||hn<1||hn>64||!Number.isInteger(zn)||zn<1||zn>64||!EKI14_INDEX.hasOwnProperty(catNo)){
+    return {answer:'要確認',verdict:'要確認',rawAnswer:'要確認',categoryNo:catNo,category:'入力確認',score:null,threshold:null,centered:null,method:'IChing-14Axis-Centered-v1',questionNegative:false,summary:'入力確認が必要：卦番号またはカテゴリを確認してください。',detail:'入力値が範囲外のため、YES/NOを判定していません。'};
+  }
   if(mv.length){
     let sum=0,count=0;
     for(const label of mv){
@@ -45,7 +82,7 @@ function eki14Judge(q,b,c,mv){
   }else{score=EKI14_Q[hn-1][k]}
   const threshold=EKI14_THRESH[k];
   let raw=score>threshold?'YES':'NO';
-  const negative=eki14Negative(q);
+  const negative=eki14Negative(q,catNo);
   const answer=negative?(raw==='YES'?'NO':'YES'):raw;
   return {answer:answer,verdict:answer,rawAnswer:raw,categoryNo:catNo,category:EKI14_CATS[k].name,score:score,threshold:threshold,centered:score-threshold,method:'IChing-14Axis-Centered-v1',questionNegative:negative,summary:'14軸Centered v1：'+EKI14_CATS[k].name+' ／ スコア '+score.toFixed(2)+'・基準 '+threshold+' → '+answer,detail:'14軸Centered v1。'+EKI14_CATS[k].name+'を基準に、卦辞・変爻・之卦を固定重みで合成。スコア差 '+(score-threshold).toFixed(2)+'。'+(negative?' 否定形質問のため最終判定を反転。':'')+moveWarning};
 }
