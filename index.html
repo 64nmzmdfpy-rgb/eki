@@ -34,12 +34,25 @@ const map={"乾乾":[1,"乾為天"],"乾兌":[10,"天沢履"],"乾離":[13,"天�
 const sem={1:'創造・前進',2:'受容・支える',3:'始まりの困難',4:'学習・未熟',5:'待機',6:'対立',7:'組織力',8:'結びつき',9:'小さな蓄積',10:'慎重',11:'通泰',12:'停滞',13:'協働',14:'繁栄',15:'謙虚',16:'勢い',17:'流れに従う',18:'修復',19:'接近',20:'観察',21:'障害除去',22:'外見',23:'衰退',24:'回復',25:'予期せぬこと',26:'蓄積',27:'養い',28:'過重',29:'危険',30:'明晰',31:'感応',32:'持続',33:'退避',34:'強勢',35:'進展',36:'防衛',37:'家・役割',38:'相違',39:'難航',40:'解放',41:'減らす',42:'増益',43:'決断',44:'遭遇',45:'集合',46:'上昇',47:'制約',48:'基盤',49:'変革',50:'成熟',51:'衝撃',52:'静止',53:'漸進',54:'不完全な結合',55:'豊盛',56:'一時性',57:'浸透',58:'交流',59:'分散',60:'制限',61:'信頼',62:'小さな超過',63:'完成',64:'未完成'};
 function yao(){const r=crypto.getRandomValues(new Uint32Array(1))[0]%16;return r===0?6:r<=5?7:r<=12?8:9}
 function hex(vals){const bits=vals.map(v=>v===7||v===9?1:0),lo=trig[bits.slice(0,3).join('')],up=trig[bits.slice(3).join('')];return map[up+lo]}
-function line(v,i){const y=v===7||v===9;if(i===0)return y?'初九':'初六';if(i===5)return y?'上九':'上六';return (y?'九':'六')+(i+1)}
+function line(v,i){const y=v===7||v===9;if(i===0)return y?'初九':'初六';if(i===5)return y?'上九':'上六';return (y?'九':'六')+['','二','三','四','五'][i]}
 function interp(q,b,c,mv){return eki14Judge(q,b,c,mv);}
 function esc(s){return String(s??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]))}
 function parseLeoVerdict(text){const m=[...String(text||'').matchAll(/最終判定\s*[：:]\s*(YES|NO)/gi)].pop();return m?m[1].toUpperCase():''}
 function parseLeoConfidence(text){const m=[...String(text||'').matchAll(/確信度\s*[：:]\s*(低|中|高)/g)].pop();return m?m[1]:''}
 function saveFormalFromLeo(item){const text=String(item.leoRead||''),v=parseLeoVerdict(text),c=parseLeoConfidence(text);if(v){item.formalVerdict=v;item.formalVerdictSavedAt=new Date().toISOString()}else{delete item.formalVerdict;delete item.formalVerdictSavedAt}if(c){item.confidence=c;item.confidenceSavedAt=new Date().toISOString()}else{delete item.confidence;delete item.confidenceSavedAt}}
+function auditIChing(item){
+  const vals=String(item.raw||'').trim().split(/[\s,，、]+/).filter(Boolean).map(Number);
+  if(vals.length!==6||vals.some(v=>![6,7,8,9].includes(v)))return '【プログラム再計算】生データ不正：初爻→上爻の6個の値が6/7/8/9ではありません。';
+  const b=hex(vals),changed=vals.map(v=>v===6?7:v===9?8:v),z=hex(changed);
+  const moves=vals.map((v,i)=>v===6||v===9?line(v,i):null).filter(Boolean);
+  const ben=String(b[0])+' '+b[1],zhi=String(z[0])+' '+z[1],move=moves.length?moves.join('・'):'なし';
+  const norm=function(s){return String(s||'なし').normalize('NFKC').replace(/([九六])([1-6])/g,function(_,a,n){return a+({'1':'一','2':'二','3':'三','4':'四','5':'五','6':'六'}[n])}).replace(/\s/g,'')};
+  const differences=[];
+  if(norm(item.ben)!==norm(ben))differences.push('本卦表示「'+(item.ben||'空欄')+'」');
+  if(norm(item.move)!==norm(move))differences.push('変爻表示「'+(item.move||'空欄')+'」');
+  if(norm(item.zhi)!==norm(zhi))differences.push('之卦表示「'+(item.zhi||'空欄')+'」');
+  return '【プログラム再計算（生データを基準）】\n本卦：'+ben+'\n変爻：'+move+'\n之卦：'+zhi+'\n記録欄との照合：'+(differences.length?'不一致 — '+differences.join('、')+'。生データの再計算結果を基準にしてください。':'一致');
+}
 function leoPrompt(item){return `次の易占いを、質問そのものに即して詳しく読んでください。これは占い結果を後付けで合わせる作業ではなく、最初に読解方針を固定してから、一度だけ最終判定を出すためのものです。
 
 【最重要ルール】
@@ -51,7 +64,7 @@ function leoPrompt(item){return `次の易占いを、質問そのものに即�
 
 【卦データの検算・最優先】
 ・読解を始める前に、生データ（初爻→上爻）から本卦・変爻・之卦が整合しているか確認してください。6と9だけが変爻で、6は陰から陽、9は陽から陰へ変わります。
-・変爻の位置を一つずつ反転して之卦を検算し、提示された本卦・変爻・之卦と一致しない場合は、別の卦に勝手に置き換えて読解を進めず、「入力確認が必要」としてください。
+・変爻の位置を一つずつ反転して之卦を検算してください。提示欄と計算が一致しない場合、ただちに「入力確認が必要」とせず、まず自分の計算ミスを疑い、生データを初爻から再計算して再点検してください。下のプログラム再計算欄も照合してください。
 ・例：生データ「8, 7, 8, 9, 8, 8」は九四だけが変わり、「40 雷水解 → 7 地水師」です。「水山蹇」や「雷山小過」に置き換えてはいけません。
 ・検算が一致したら、その卦データを最後まで固定してください。本文の途中や最終判定で、之卦を別の卦に変更しないでください。
 
@@ -87,7 +100,7 @@ YESにもNOにも読める材料がある場合は、どちらが最終的な流
 7. 判定を固定する。
 最終判定を一度出した後は、利用者の反応、以前の試行結果、他の占い結果などを理由に変更しないでください。
 あとから逆方向の根拠を見つけても、その場でYES/NOを反転させないでください。
-読解に明白な入力ミスがある場合だけ、判定せず「入力確認が必要」としてください。
+「入力確認が必要」で止めるのは、生データが欠損している・6個の値が6/7/8/9以外を含むなど、生データ自体が計算不能な場合に限ってください。生データが有効なら、生データから再計算した本卦・変爻・之卦を基準に読解を進め、既存表示との相違があれば短く明示してください。
 
 【結婚・交際などの質問で特に注意】
 ・「結婚するか」と聞かれているのに、「今は障害がある」「進みにくい」というだけで「結婚しない」と結論づけないでください。
@@ -121,7 +134,14 @@ JSONやコードブロックは不要です。
 生データ（初爻→上爻）：${item.raw}
 本卦：${item.ben}
 変爻：${item.move}
-之卦：${item.zhi}`}
+之卦：${item.zhi}
+
+${auditIChing(item)}
+
+【不一致時の扱い】
+・プログラム再計算欄は、生データからサイト内で再計算した基準結果です。
+・表示欄と再計算欄が食い違う場合、すぐ利用者に確認を求めず、生データを2回検算してください。
+・生データが有効なら、その再計算結果を使って読解し、古い表示欄の不一致を注記してください。`}
 async function copyText(text){try{await navigator.clipboard.writeText(text);return true}catch(e){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();const ok=document.execCommand('copy');ta.remove();return ok}}
 async function sendToLeo(item,btn){const prompt=leoPrompt(item);const ok=await copyText(prompt);btn.textContent=ok?'占い文をコピーした':'コピーできなかった';setTimeout(()=>btn.textContent='レオに読ませる',1800)}
 async function pasteLeo(item,area,btn){btn.textContent='貼り付けを待っています…';area.focus();try{if(!navigator.clipboard||!navigator.clipboard.readText)throw new Error();const text=await navigator.clipboard.readText();if(!text)throw new Error();area.value=text;item.leoRead=text;item.leoSavedAt=new Date().toISOString();saveFormalFromLeo(item);saveLocal();render();btn.textContent='貼り付け・保存済み'}catch(e){area.focus();const end=area.value.length;try{area.setSelectionRange(end,end)}catch(_e){}btn.textContent='⌘Vで貼り付け（自動保存）'}}
